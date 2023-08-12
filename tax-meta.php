@@ -40,63 +40,64 @@ class TaxMeta {
     add_action('admin_menu',array( $this,'taxm_add_metabox' ));
 
     add_action( 'admin_enqueue_scripts', array( $this, 'taxm_admin_assets' ) );
- }
 
+    add_action( 'save_post',array( $this,'taxm_save_post' ) );
+ }
 
  function taxm_admin_assets() {
       wp_enqueue_style( 'taxm-admin-style', plugin_dir_url( __FILE__ ) . "assets/admin/css/style.css", null, time() );
 
   }
-  function taxm_update_category_field($term_id){
-      if(wp_verify_nonce($_POST['_wpnonce'],"update-tag_{$term_id}")){  
-          $exta_info = sanitize_text_field($_POST['extra-info']);   
-          update_term_meta( $term_id,'taxm_extra_info',$exta_info);
-         }  
-  }
 
-  function taxm_save_category_field ($term_id){
-      if( wp_verify_nonce($_POST['_wpnonce_add-tag'],'add-tag') ){
-            $exta_info = sanitize_text_field( $_POST['extra-info'] );   
-            update_term_meta( $term_id,'taxm_extra_info',$exta_info );
-      }  
-  }
- function taxm_category_edit_form_fields( $term ){
-      $exta_info = get_term_meta($term->term_id,'taxm_extra_info',true);
-      ?>
-      <tr class="form-field form-required term-name-wrap">
-            <th scope="row">
-                  <label for="name"><?php _e('Extra Filed','tax-meta') ?></label>
-            </th>
-            <td>
-            <input name="extra-info" id="extra-info" type="text" value="<?php echo esc_attr($exta_info) ?>" size="40" aria-required="true" aria-describedby="name-description">
-            <p id="name-description"><?php _e('Some Helps Information','tax-meta') ?></p>
-            </td>
-      </tr>
-      <?php
- }
-
-function taxm_category_form_fields(){
-      ?>
-      <div class="form-field form-required term-name-wrap">
-            <label for="tag-name"><?php _e('Extra Field','tex-meta') ?></label>
-            <input name="extra-info" id="extra-info" type="text" value="" size="40" aria-required="true" aria-describedby="name-description">
-            <p id="name-description"><?php _e('Some Helps Information','tax-meta') ?></p>
-      </div>
-      <?php
- }
-
-function taxm_bootstrap(){
-      $args = array(
-            'type' =>'string',
-            'sanitize_callback'=>'sanitize_text_field',
-            'single'=> true,
-            'description' => 'sample meta field for category tax',
-            'show_in_rest'=> true
-      );
-      register_meta( 'term','taxm_extra_info',$args );
+function taxm_update_category_field($term_id){
+    if( wp_verify_nonce($_POST['_wpnonce'],"update-tag_{$term_id}" )){  
+        $exta_info = sanitize_text_field($_POST['extra-info']);   
+        update_term_meta( $term_id,'taxm_extra_info',$exta_info);
+       }  
 }
 
+function taxm_save_category_field ($term_id){
+    if( wp_verify_nonce($_POST['_wpnonce_add-tag'],'add-tag') ){
+          $exta_info = sanitize_text_field( $_POST['extra-info'] );   
+          update_term_meta( $term_id,'taxm_extra_info',$exta_info );
+    }  
+}
+function taxm_category_edit_form_fields( $term ){
+    $exta_info = get_term_meta($term->term_id,'taxm_extra_info',true);
+    ?>
+    <tr class="form-field form-required term-name-wrap">
+          <th scope="row">
+                <label for="name"><?php _e('Extra Filed','tax-meta') ?></label>
+          </th>
+          <td>
+          <input name="extra-info" id="extra-info" type="text" value="<?php echo esc_attr($exta_info) ?>" size="40" aria-required="true" aria-describedby="name-description">
+          <p id="name-description"><?php _e('Some Helps Information','tax-meta') ?></p>
+          </td>
+    </tr>
+    <?php
+}
 
+function taxm_category_form_fields(){
+    ?>
+    <div class="form-field form-required term-name-wrap">
+          <label for="tag-name"><?php _e('Extra Field','tex-meta') ?></label>
+          <input name="extra-info" id="extra-info" type="text" value="" size="40" aria-required="true" aria-describedby="name-description">
+          <p id="name-description"><?php _e('Some Helps Information','tax-meta') ?></p>
+    </div>
+    <?php
+}
+
+function taxm_bootstrap(){
+    $args = array(
+          'type' =>'string',
+          'sanitize_callback'=>'sanitize_text_field',
+          'single'=> true,
+          'description' => 'sample meta field for category tax',
+          'show_in_rest'=> true
+    );
+    register_meta( 'term','taxm_extra_info',$args );
+}
+  
 //  Post meta 
 
  function taxm_add_metabox(){
@@ -108,10 +109,73 @@ function taxm_bootstrap(){
         );
  }
 
- function taxm_display_post(){
-      
-        wp_nonce_field( 'taxm_posts', 'omb_posts_nonce' );
+//   if ( ! function_exists( 'ptmf_is_secured' ) ) {
+    function taxm_is_secured( $nonce_field, $action, $post_id  ){
+        $nonce = isset( $_POST[ $nonce_field ] ) ? $_POST[ $nonce_field ] : '';
+        if ( $nonce == '' ) {
+			return false;
+		}
+		if ( ! wp_verify_nonce( $nonce, $action ) ) {
+			return false;
+		}
+
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return false;
+		}
+
+		if ( wp_is_post_autosave( $post_id ) ) {
+			return false;
+		}
+
+		if ( wp_is_post_revision( $post_id ) ) {
+			return false;
+		}
+
+		return true;
+
+    }
+	
+// }
+
+ function taxm_save_post( $post_id ){
+
+    if( ! TaxMeta::taxm_is_secured( 'taxm_nonce_posts','taxm_posts',$post_id ) ){
+        return $post_id;
+    }
+
+    $selected_posts_id = $_POST['taxm_post' ] ? $_POST['taxm_post' ]: '';
+
+    echo $selected_posts_id;
+    if( $selected_posts_id > 0 ){
+        update_post_meta( $post_id,'taxm_selected_post', $selected_posts_id );
+    }
+    return $post_id;
+ }
+
+ function taxm_display_post( $post ){
+        wp_nonce_field( 'taxm_posts','taxm_nonce_posts' );
         $label = esc_html__( 'Select Post','tax-meta' );
+
+        $selected_post_id = get_post_meta( $post->ID,'taxm_selected_post',true );
+        
+        $args = array(
+            'post_type' => 'post',
+            'posts_per_page' => -1,
+
+        );
+        $_post  = new WP_query( $args );
+        $dropdown_list ='';
+        while( $_post->have_posts() ){
+            $extra  = '';
+            $_post->the_post();
+           
+            if(get_the_ID() == $selected_post_id){
+                $extra = 'selected';
+            }
+
+            $dropdown_list .= sprintf("<option %s value='%s'>%s</option>",$extra, get_the_ID(),get_the_title());
+        }
+        wp_reset_query();
 
         $metabox_html = <<<EOD
         <div class="fields">
@@ -120,8 +184,9 @@ function taxm_bootstrap(){
                     <label>{$label}</label>
                 </div>
                 <div class="input_c">
-                    <select name="taxm_select_post" id="taxm_select_post">
+                    <select name="taxm_post" id="taxm_post">
                     <option value="0">{$label}</option>
+                    {$dropdown_list}
                     </select>
                 </div>
                 <div class="float_c"></div>
@@ -131,17 +196,8 @@ function taxm_bootstrap(){
         EOD;
 
         echo $metabox_html;
+
  }
-
-
-
-
-
-
-
-
-
-
 
  function taxm_plugin_text_domain(){
     load_plugin_textdomain('tax-meta',false,dirname(__FILE__).'/languages');
