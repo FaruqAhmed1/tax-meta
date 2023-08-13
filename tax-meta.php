@@ -144,10 +144,14 @@ function taxm_bootstrap(){
     }
 
     $selected_posts_id = $_POST['taxm_post' ] ? $_POST['taxm_post' ]: '';
+    $selected_term_id = $_POST['taxm_term'] ? $_POST['taxm_term'] : '';
 
-    echo $selected_posts_id;
     if( $selected_posts_id > 0 ){
         update_post_meta( $post_id,'taxm_selected_post', $selected_posts_id );
+    }
+
+    if( $selected_term_id > 0  ){
+        update_post_meta( $post_id,'taxm_selected_term',$selected_term_id );
     }
     return $post_id;
  }
@@ -155,8 +159,10 @@ function taxm_bootstrap(){
  function taxm_display_post( $post ){
         wp_nonce_field( 'taxm_posts','taxm_nonce_posts' );
         $label = esc_html__( 'Select Post','tax-meta' );
+        $label2 = esc_html__( 'Select Term','tax-meta' );
 
         $selected_post_id = get_post_meta( $post->ID,'taxm_selected_post',true );
+        $selected_term_id = get_post_meta( $post->ID,'taxm_selected_term',true );
         
         $args = array(
             'post_type' => 'post',
@@ -177,6 +183,21 @@ function taxm_bootstrap(){
         }
         wp_reset_query();
 
+
+        $_terms = get_terms( array(
+            'taxonomy'=> 'category',
+        ) );
+        $term_dropdown_list = '';
+        foreach( $_terms as $_term  ){
+            $extra = '';
+            if( $_term->term_id == $selected_term_id ){
+                $extra = 'selected';
+            }
+
+            $term_dropdown_list .= sprintf("<option %s value='%s'>%s</option>",$extra, $_term->term_id, $_term->name);
+
+        }
+
         $metabox_html = <<<EOD
         <div class="fields">
             <div class="field_c">
@@ -187,6 +208,20 @@ function taxm_bootstrap(){
                     <select name="taxm_post" id="taxm_post">
                     <option value="0">{$label}</option>
                     {$dropdown_list}
+                    </select>
+                </div>
+                <div class="float_c"></div>
+            </div>
+
+
+            <div class="field_c">
+                <div class="label_c">
+                    <label for="taxm_term">{$label2}</label>
+                </div>
+                <div class="input_c">
+                    <select name="taxm_term" id="taxm_term">
+                    <option value="0">{$label2}</option>
+                    {$term_dropdown_list}
                     </select>
                 </div>
                 <div class="float_c"></div>
